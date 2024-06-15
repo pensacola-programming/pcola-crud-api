@@ -35,14 +35,6 @@ type User struct {
 	LastName  string `json:"lastName"`
 }
 
-func assert(condition bool, errMsg string) error {
-	if !condition {
-		return fmt.Errorf(errMsg)
-	}
-
-	return nil
-}
-
 func main() {
 	e := echo.New()
 	e.GET("/", func(c echo.Context) error {
@@ -61,12 +53,18 @@ func handleDeleteTodo(c echo.Context) error {
 }
 
 func handleAddTodo(c echo.Context) error {
-	id := c.Param("id")
-	assert(len(id) > 0, "id missing")
-	panic("not implemented")
+
+	return echo.NewHTTPError(http.StatusInternalServerError, "handler not implemented")
 }
 
 func handleUpdateTodo(c echo.Context) error {
+	id := c.Param("id")
+
+	if len(id) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "missing id param")
+	}
+
+	fmt.Println(id)
 	panic("not implemented")
 }
 
