@@ -7,6 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 /*
@@ -21,7 +23,6 @@ last_name - varchar
 type Todo struct {
 	Id        uuid.UUID `json:"id"`
 	Title     string    `json:"title"`
-	Created   time.Time `json:"created"`
 	Due       time.Time `json:"due"`
 	Completed bool      `json:"completed"`
 	GroupId   int       `json:"groupId"`
@@ -33,6 +34,22 @@ type User struct {
 	Password  string
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
+}
+
+func setupDb(dbLocation string, c echo.Context) error {
+	if len(dbLocation) == 0 {
+		return echo.NewHTTPError(http.StatusInternalServerError, "db file location required")
+	}
+
+	db, err := gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{})
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not open db")
+	}
+
+	c.Set("db", db)
+	return nil
+
 }
 
 func main() {
@@ -72,7 +89,6 @@ func handleGetTodo(c echo.Context) error {
 	t := &Todo{
 		Id:        uuid.New(),
 		Title:     "todo title",
-		Created:   time.Now(),
 		Due:       time.Now().AddDate(0, 0, 10),
 		Completed: false,
 		GroupId:   1,
