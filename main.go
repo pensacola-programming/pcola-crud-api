@@ -7,8 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 /*
@@ -37,6 +35,14 @@ type User struct {
 	LastName  string `json:"lastName"`
 }
 
+func assert(condition bool, errMsg string) error {
+	if !condition {
+		return fmt.Errorf(errMsg)
+	}
+
+	return nil
+}
+
 func main() {
 	e := echo.New()
 	e.GET("/", func(c echo.Context) error {
@@ -56,7 +62,7 @@ func handleDeleteTodo(c echo.Context) error {
 
 func handleAddTodo(c echo.Context) error {
 	id := c.Param("id")
-	fmt.Println(id)
+	assert(len(id) > 0, "id missing")
 	panic("not implemented")
 }
 
