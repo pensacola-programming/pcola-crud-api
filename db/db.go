@@ -1,17 +1,24 @@
 package db
 
 import (
-	"net/http"
+	"sync"
+
+	"log"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
+var (
+	once     sync.Once
+	instance *gorm.DB
+	err      error
+)
+
 type Todo struct {
-	Id        uuid.UUID `json:"id"`
+	Id        uuid.UUID `json:"id" param:"id"`
 	Title     string    `json:"title"`
 	Due       time.Time `json:"due"`
 	Completed bool      `json:"completed"`
@@ -26,17 +33,21 @@ type User struct {
 	LastName  string `json:"lastName"`
 }
 
-func setupDb(dbLocation string) (*gorm.DB, error) {
-	if len(dbLocation) == 0 {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "db file location required")
-	}
+func New(dbLocation string) (*gorm.DB, error) {
+	once.Do(func() {
+		instance, err = gorm.Open(sqlite.Open(dbLocation), &gorm.Config{})
+		if err != nil {
+			log.Fatalf("could not open db: %v", err)
+		}
 
-	db, err := gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{})
+		if err = instance.AutoMigrate(&Todo{}, &User{}); err != nil {
+			log.Fatalf("could not migrate db: %v", err)
+		}
+	})
 
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "could not open db")
-	}
+	return instance, err
+}
 
-	return db, nil
-
+func DB() *gorm.DB {
+	return instance
 }

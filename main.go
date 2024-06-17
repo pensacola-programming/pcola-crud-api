@@ -3,34 +3,25 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
 	"github.com/mulfdev/pcola-crud-api/db"
 )
 
-/*
-
-id - PK integer not null
-email - varchar
-password - varchar
-first_name - varchar
-last_name - varchar
-*/
-
 func main() {
 	e := echo.New()
+	_, err := db.New("database.db")
+
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
 
 	e.GET("/", func(c echo.Context) error {
 
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
-	e.GET("/todo", handleGetTodo)
+	e.GET("/todo/:id", handleGetTodo)
 	e.POST("/todo", handleAddTodo)
 
 	e.PUT("/todo/:id", handleUpdateTodo)
@@ -43,7 +34,16 @@ func handleDeleteTodo(c echo.Context) error {
 
 func handleAddTodo(c echo.Context) error {
 
-	return echo.NewHTTPError(http.StatusInternalServerError, "handler not implemented")
+	var todo db.Todo
+	err := c.Bind(&todo)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest)
+	}
+	result := db.DB().Create(&todo)
+	if result.Error != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "could not create todo")
+	}
+	return c.JSON(http.StatusCreated, &todo)
 }
 
 func handleUpdateTodo(c echo.Context) error {
@@ -58,14 +58,21 @@ func handleUpdateTodo(c echo.Context) error {
 }
 
 func handleGetTodo(c echo.Context) error {
-	t := &Todo{
-		Id:        uuid.New(),
-		Title:     "todo title",
-		Due:       time.Now().AddDate(0, 0, 10),
-		Completed: false,
-		GroupId:   1,
+
+	var todo db.Todo
+	err := c.Bind(&todo)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "could not find todo")
 	}
-	return c.JSON(http.StatusOK, t)
+
+	result := db.DB().Where("id = ?", todo.Id).First(&todo)
+
+	if result.Error != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "could not load todo")
+	}
+
+	return c.JSON(http.StatusOK, todo)
 }
 
 /*
