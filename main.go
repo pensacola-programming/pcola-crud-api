@@ -23,13 +23,26 @@ func main() {
 
 	e.GET("/todo/:id", handleGetTodo)
 	e.POST("/todo", handleAddTodo)
-
+	e.DELETE("/todo/:id", handleDeleteTodo)
 	e.PUT("/todo/:id", handleUpdateTodo)
 	e.Logger.Fatal(e.Start(":1323"))
 }
 
 func handleDeleteTodo(c echo.Context) error {
-	panic("Not implemented")
+
+	var todo db.Todo
+	err := c.Bind(&todo)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "todo id missing")
+	}
+
+	result := db.DB().Delete(&todo, todo.Id)
+	if result.Error != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "could not find todo")
+	}
+
+	return c.JSON(http.StatusOK, "deleted")
 }
 
 func handleAddTodo(c echo.Context) error {
